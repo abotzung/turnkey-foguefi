@@ -56,5 +56,5 @@ Notes
 .. _FOG Project: https://fogproject.org/ 
 .. _TurnKey Core: https://www.turnkeylinux.org/core 
 .. _Adminer: https://www.adminer.org 
-.. _FOG Project documentation: https://docs.fogproject.org/en/latest/installation/install_fog_server.html#install-fog-server
+.. _FOG Project documentation: https://docs.fogproject.org/en/latest/installation/server/install-fog-server/
 
