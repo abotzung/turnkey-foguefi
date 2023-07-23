@@ -56,3 +56,5 @@ console-data
 console-setup
 
 zstd
+
+dosfstools
