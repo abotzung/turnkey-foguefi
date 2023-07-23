@@ -199,6 +199,11 @@ sed -i "/submask=/d; \$asubmask=${APO}${submask}${APO}" /opt/fog/.fogsettings
 # Change hostname based from the system hostname
 sed -i "/hostname=/d; \$ahostname=${APO}${hostname}${APO}" /opt/fog/.fogsettings
 
+# Configure IP address and server name info apache2 config file
+FOGApacheFile=$(grep -rnw '/management/other/ca.cert.der$ - ' /etc/apache2 | head -n1 | cut -f1 -d:)
+sed -i "/ServerName /c\    ServerName $ipaddress" "$FOGApacheFile"
+sed -i "/ServerAlias /c\    ServerAlias $HOSTNAME" "$FOGApacheFile"
+
 echo "==== Starting FOG services..."
 action=start
 systemctl $action apache2

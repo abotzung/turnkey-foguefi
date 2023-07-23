@@ -82,6 +82,8 @@ umount /dev
 # --- Cleanup, again...
 rm -rf "$SRCGrub"/tools/fogbuilder/sources/*
 rm -rf "$SRCGrub"/tools/fogbuilder/temp/*
+rm -rf "$SRCGrub"/tools/fogbuilder/rootfs/*
+
 
 # --- Create the FOG PDS Addon
 mkdir -p $SRCGrub
@@ -90,6 +92,11 @@ mkdir -p $SRCGrub
 git clone https://github.com/abotzung/fogplugin-postdownloadscript.git $SRCPDS
 cd $SRCPDS
 ./install.sh --unattended-yes
+
+# --- Cleanup leftover IP address and server name info apache2 config file
+FOGApacheFile=$(grep -rnw '/management/other/ca.cert.der$ - ' /etc/apache2 | head -n1 | cut -f1 -d:)
+sed -i "/ServerName /c\    ServerName 127.0.0.1" "$FOGApacheFile"
+sed -i "/ServerAlias /c\    ServerAlias turnkey-foguefi" "$FOGApacheFile"
 
 # --- Better locales : console-setup 
 CONF=/etc/default/console-setup
