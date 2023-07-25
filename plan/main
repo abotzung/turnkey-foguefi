@@ -39,7 +39,7 @@ php-ldap
 php-mbstring
 php-mysql
 php-mysqlnd
-sysv-rc-conf
+#sysv-rc-conf
 tar
 tftp-hpa
 tftpd-hpa
