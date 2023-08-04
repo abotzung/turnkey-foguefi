@@ -8,7 +8,10 @@ Configure Fog webservice password
 
 Options:
     -u --user=    mysql username (default: fog)
-
+    -p --pass=    unless provided, will ask interactively
+    -H --host=    hostname - optional (default: localhost)
+                  - never asked interactively
+    --query=      optional query to execute after setting password
 """
 
 import re
@@ -92,7 +95,7 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "hu:p:",
-                     ['help', 'user='])
+                     ['help', 'user=', 'pass=', 'host=', 'query='])
 
     except getopt.GetoptError as e:
         usage(e)
@@ -102,8 +105,20 @@ def main():
     hostname="localhost"
     queries=[]
 
+    for opt, val in opts:
+        if opt in ('-h', '--help'):
+            usage()
+        elif opt in ('-u', '--user'):
+            username = val
+        elif opt in ('-p', '--pass'):
+            password = val
+        elif opt in ('-H', '--host'):
+            hostname = val
+        elif opt in ('--query'):
+            queries.append(val)
+
     if not password:
-        d = Dialog('TurnKey Linux - FOG Configuration')
+        d = Dialog('TurnKey Linux - First boot configuration')
         password = d.get_password(
             "FOG Password",
             "Please enter new password for FOG Webservice '%s' account." % username)
@@ -115,7 +130,9 @@ def main():
     # set password
     m.execute("update fog.users set uPass='"+pwdresult.hexdigest()+"' where uName='"+username+"';")
 
-
+    # execute any adhoc specified queries
+    for query in queries:
+        m.execute(query)
 
 if __name__ == "__main__":
     main()

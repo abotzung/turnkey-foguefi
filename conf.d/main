@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-FOG_VER=1.5.9
+FOG_VER=1.5.10
 
 ADMIN_NAME=fog
 ADMIN_PASS=password
@@ -52,6 +52,7 @@ chmod +x $SRC/utils/FOGiPXE/buildipxe_nonet.sh
 cat > /usr/lib/inithooks/firstboot.d/17recompile_ipxecerts << EOF
 #!/bin/bash
 # This script recompiles iPXE with new certificates
+trap '' 2 
 systemctl stop ntp
 find $SRC/utils/FOGiPXE/ -type f -exec touch {} +
 sleep 2
@@ -60,6 +61,7 @@ echo "=== Recompiling iPXE with new certs, please wait. (5-20 minutes) ==="
 . buildipxe_nonet.sh > /dev/null
 cp -rv $SRC/packages/tftp/* /tftpboot
 systemctl start ntp
+trap 2
 EOF
 chmod +x /usr/lib/inithooks/firstboot.d/17recompile_ipxecerts
 
