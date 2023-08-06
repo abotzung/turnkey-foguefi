@@ -2,9 +2,13 @@
 #  Alexandre BOTZUNG <alexandre.botzung@grandest.fr> - dec. 2022
 #  Reconfigure keyboard layout
 
-dpkg-reconfigure keyboard-configuration
-dpkg-reconfigure locales
-udevadm trigger --subsystem-match=input --action=change
-service keyboard-setup restart
-service console-setup restart
+. /etc/default/inithooks
 
+# Si le fichier d'autoconf d'Inithooks n'existe pas, propose de configurer le layout du clavier + locales
+if [ ! -e $INITHOOKS_CONF ]; then
+	dpkg-reconfigure keyboard-configuration
+	dpkg-reconfigure locales
+	udevadm trigger --subsystem-match=input --action=change
+	service keyboard-setup restart
+	service console-setup restart
+fi
