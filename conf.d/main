@@ -69,7 +69,7 @@ sleep 2
 cd $SRC/utils/FOGiPXE/
 echo "=== Recompiling iPXE with new certs, please wait. (5-20 minutes) ==="
 . buildipxe_nonet.sh > /dev/null
-cp -rv $SRC/packages/tftp/* /tftpboot
+cp -rf $SRC/packages/tftp/* /tftpboot
 systemctl start ntp
 trap 2
 EOF
