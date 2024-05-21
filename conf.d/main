@@ -6,7 +6,7 @@ ADMIN_NAME=fog
 ADMIN_PASS=password
 
 SRC=/opt/foginstall/installer
-SRCGrub=/opt/foguefi
+SRCFOGUEFI=/opt/foguefi
 SRCPDS=/opt/fogplugin-postdownloadscript
 
 WEBROOT=/var/www/fog
@@ -78,13 +78,15 @@ chmod +x /usr/lib/inithooks/firstboot.d/17recompile_ipxecerts
 # --- Cleanup
 cd /
 rm -rf $SRC/.git
+rm -rf "$SRC/tmp"
+mkdir "$SRC/tmp" || true
 
 # --- Create the FOG GRUB Patch
-mkdir -p $SRCGrub
+mkdir -p $SRCFOGUEFI
 
-# --- Download FOG GRUB Patch && install it
-git clone https://github.com/abotzung/foguefi.git $SRCGrub
-cd $SRCGrub
+# --- Download FOGUEFI && install it
+git clone https://github.com/abotzung/foguefi.git $SRCFOGUEFI
+cd $SRCFOGUEFI
 # !!! !!! !!! DANGER - This patch needs loop for mounting ISO and Ext? disk !!! !!! !!!
 mount -t devtmpfs devtmpfs /dev
 modprobe loop
@@ -92,13 +94,17 @@ modprobe loop
 umount /dev
 
 # --- Cleanup, again...
-rm -rf "$SRCGrub"/tools/fogbuilder/sources/*
-rm -rf "$SRCGrub"/tools/fogbuilder/temp/*
-rm -rf "$SRCGrub"/tools/fogbuilder/rootfs/*
-
+rm -rf "$SRCFOGUEFI"/tools/fogbuilder/sources
+mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/sources
+rm -rf "$SRCFOGUEFI"/tools/fogbuilder/temp
+mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/temp
+rm -rf "$SRCFOGUEFI"/tools/fogbuilder/rootfs
+mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/rootfs
+rm -rf "$SRCFOGUEFI"/tools/fogbuilder/release
+mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/release
 
 # --- Create the FOG PDS Addon
-mkdir -p $SRCGrub
+mkdir -p $SRCPDS
 
 # --- Download FOG PDS Addon (devel) && install it
 git clone https://github.com/abotzung/fogplugin-postdownloadscript.git $SRCPDS
