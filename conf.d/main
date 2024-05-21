@@ -94,14 +94,12 @@ modprobe loop
 umount /dev
 
 # --- Cleanup, again...
-rm -rf "$SRCFOGUEFI"/tools/fogbuilder/sources
-mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/sources
-rm -rf "$SRCFOGUEFI"/tools/fogbuilder/temp
-mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/temp
-rm -rf "$SRCFOGUEFI"/tools/fogbuilder/rootfs
-mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/rootfs
-rm -rf "$SRCFOGUEFI"/tools/fogbuilder/release
-mkdir -p "$SRCFOGUEFI"/tools/fogbuilder/release
+mv "$SRCFOGUEFI"/tools/fosbuilder/sources/apkout "$SRCFOGUEFI"/tools/fosbuilder/apkout 
+rm -rf "$SRCFOGUEFI"/tools/fosbuilder/sources/*
+rm -rf "$SRCFOGUEFI"/tools/fosbuilder/temp/*
+rm -rf "$SRCFOGUEFI"/tools/fosbuilder/rootfs/*
+rm -rf "$SRCFOGUEFI"/tools/fosbuilder/release/*
+
 
 # --- Create the FOG PDS Addon
 mkdir -p $SRCPDS
