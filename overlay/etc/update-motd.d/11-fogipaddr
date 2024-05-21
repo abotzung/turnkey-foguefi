@@ -1,22 +1,131 @@
 #!/bin/sh
+# Teste si le certificat actuellement utilisé par FOG 
+#  est cohérent avec l'adresse IP actuelle.
+# Teste aussi si l'adresse IP interne de FOG (dans la BDD fog)
+#  est cohérente avec l'adresse IP actuelle.
+# Affiche un message en conséquence
+#
+#  --- This script includes components from the FOG Project ---
+#  FOG - Free, Open-Source Ghost is a computer imaging solution.
+#  Copyright (C) 2007  Chuck Syperski & Jian Zhang
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# * @package  FOGProject
+# * @author   Tom Elliott <tommygunsster@gmail.com>
+# * @license  http://opensource.org/licenses/gpl-3.0 GPLv3
+# * @link     https://fogproject.org
+
+getAllNetworkInterfaces() {
+    gatewayif=$(ip -4 route show | grep "^default via" | awk '{print $5}')
+    if [ -z ${gatewayif} ]; then
+        interfaces="$(ip -4 link | grep -v LOOPBACK | grep UP | awk -F': |@' '{print $2}' | tr '\n' ' ')"
+    else
+        interfaces="$gatewayif $(ip -4 link | grep -v LOOPBACK | grep UP | awk -F': |@' '{print $2}' | tr '\n' ' ' | sed "s/${gatewayif}//g")"
+    fi
+    echo -n $interfaces
+}
+
+getCidr() {
+    local cidr
+    cidr=$(ip -f inet -o addr | grep $1 | awk -F'[ /]+' '/global/ {print $5}' | head -n2 | tail -n1)
+    echo $cidr
+}
 
 if [ -z "$TERM" ]; then
     _term=linux
 else
     _term=$TERM
 fi
-
 bold=$(tput -T $_term bold)
 normal=$(tput -T $_term sgr0)
 
+gatewayIP=$(ip -4 route show | grep "^default via" | awk '{print $3}')
+# ^ : 192.168.1.1
+allinterfaces=$(getAllNetworkInterfaces)
+# ^ : eth0 eth1 eth...
+strSuggestedInterface=$(echo ${allinterfaces} | awk '{print $1}')
+# ^ : eth0
+ipaddress=$(ip -4 addr show $strSuggestedInterface | awk '$1 == "inet" {gsub(/\/.*$/, "", $2); print $2}')
+# ^ : 192.168.1.100
+execcmds=""
+_badip=0
+_badcert=0
+
+
+_FOGIP=$(mysql -s -N --execute="SELECT settingValue FROM globalSettings WHERE settingKey = 'FOG_WEB_HOST';" fog 2>/dev/null)
+_SRVPUBLIC=$(find /var -iregex '.*srvpublic.crt' | head -n 1 | xargs realpath)
+if [ -r "$_SRVPUBLIC" ]; then
+	openssl version >> /dev/null 2>&1
+	if [ "$?" -ne 0 ]; then
+		echo "openssl not found / generic error"
+		exit 1
+	fi
+	if [ -z "$strSuggestedInterface" ]; then
+		echo "ERROR : No suggested interface found"
+		exit 1
+	fi
+	if [ -z "$ipaddress" ]; then
+		echo "ERROR : No IP address for suggested interface ($strSuggestedInterface)"
+		exit 1
+	fi
+
+	_CN=$(openssl x509 -noout -subject -in "$_SRVPUBLIC")
+	
+	# Remove space in the string
+	_CN=$(echo "$_CN" | sed 's/ //g')
+	_LeCN=$(echo "$_CN" | cut -f3 -d"=")
+	
+	if [ "$ipaddress" != "$_LeCN" ]; then
+		_badcert=1
+	fi
+else
+	echo "ERR : Unable to locate srvpublic.crt"
+	# No cert. ? BAD CERT. !
+	_badcert=1
+fi
+
+if [ "$_badcert" -eq 1 ] || [ "$_FOGIP" != "$ipaddress" ]; then
+	echo
+	echo "    $(tput -T $_term setaf 0; tput -T $_term setab 3)***** Warning : FOG Server *****${normal}"
+	echo
+	if [ "$_FOGIP" != "$ipaddress" ]; then
+		#echo " => FOG Current IP address ($_FOGIP) does not match IP address $ipaddress ($strSuggestedInterface) [IDADDR_ERROR]"
+		#echo " => The IP address of this server $ipaddress ($strSuggestedInterface) does not match FOG IP address ($_FOGIP)"
+		echo " => The IP address of this server $ipaddress ($strSuggestedInterface) does not match FOG IP address."
+		#----------------------------------------------------------------------------------------------------------
+		execcmds="\n * $(tput -T $_term setaf 5)changeip-fogserver${normal} (reconfigure FOG IP address)\n"
+	fi
+	if [ "$ipaddress" != "$_LeCN" ]; then
+		#echo " => FOG Current certificate CN ($_LeCN) does not match IP address $ipaddress ($strSuggestedInterface) [CERTCN_ERROR]"
+		#echo " => The IP address of this server $ipaddress ($strSuggestedInterface) does not match FOG Cert CN ($_LeCN)"
+		echo " => The IP address of this server $ipaddress ($strSuggestedInterface) does not match FOG Cert. CN."
+		execcmds="${execcmds} * $(tput -T $_term setaf 5)regencert-fogserver${normal} (regenerate FOG certificates)\n * $(tput -T $_term setaf 5)recompileipxe-fogserver${normal} (recompile FOG iPXE)"
+	fi
+	echo "${normal}You ${bold}*must*${normal} restore the status of your FOG Server with theses commands (in this order): ${execcmds}"
+	echo ''
+	echo "${normal}Unless executed, FOG Server, iPXE and FOG Client will not work properly.${normal}"
+	#----------------------------------------------------------------------------------------------------------
+	printf "\nNOTE : Remember to configure in your DHCP server options :"
+	echo " * ${bold}066${normal} (PXE Server hostname/'next-server') to ${bold}${ipaddress}${normal}"
+	echo " * ${bold}067${normal} (PXE Boot Filename/'filename') to ${bold}shimx64.efi${normal}"
+fi
+
 echo
-echo "    ${bold}***** Warning *****${normal}"
-echo
-echo "    After changing your IP address, launch this command: ${bold}changeip-fogserver${normal}"
-echo "    Unless executed, FOG Server will not work properly."
-echo
-echo "    ${bold}changeip-fogserver${normal} - Change the IP address inside FOG Server configuration"
-echo "    ${bold}regencert-fogserver${normal} - Regen web certificates (used by FOG Client)"
-echo "    ${bold}regensecret-fogserver${normal} - Regen all passwords used by FOG Server (FTP, web,...)"
-echo "    ${bold}recompileipxe-fogserver${normal} - Recompile iPXE with FOG certificates"
+echo "  ${bold}changeip-fogserver${normal} - Change the IP address inside FOG Server configuration"
+echo "  ${bold}regencert-fogserver${normal} - Regen web certificates (used by FOG Client)"
+echo "  ${bold}regensecret-fogserver${normal} - Regen all passwords used by FOG Server (FTP, web,...)"
+echo "  ${bold}recompileipxe-fogserver${normal} - Recompile iPXE with FOG certificates"
 echo ""
+
