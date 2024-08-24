@@ -94,11 +94,11 @@ modprobe loop
 umount /dev
 
 # --- Cleanup, again...
-mv "$SRCFOGUEFI"/tools/fosbuilder/sources/apkout "$SRCFOGUEFI"/tools/fosbuilder/apkout 
-rm -rf "$SRCFOGUEFI"/tools/fosbuilder/sources/*
-rm -rf "$SRCFOGUEFI"/tools/fosbuilder/temp/*
-rm -rf "$SRCFOGUEFI"/tools/fosbuilder/rootfs/*
-rm -rf "$SRCFOGUEFI"/tools/fosbuilder/release/*
+#mv "$SRCFOGUEFI"/tools/fosbuilder/sources/apkout "$SRCFOGUEFI"/tools/fosbuilder/apkout 
+#rm -rf "$SRCFOGUEFI"/tools/fosbuilder/sources/*
+#rm -rf "$SRCFOGUEFI"/tools/fosbuilder/temp/*
+#rm -rf "$SRCFOGUEFI"/tools/fosbuilder/rootfs/*
+#rm -rf "$SRCFOGUEFI"/tools/fosbuilder/release/*
 
 
 # --- Create the FOG PDS Addon
